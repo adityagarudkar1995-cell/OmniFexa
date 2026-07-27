@@ -3,26 +3,57 @@
 **Every Tool. One Workspace.**
 
 ## Status
+Foundation and engineering documentation established
 
-Foundation initialized.
+## Overview
+Brief product description — mobile-first, privacy-first online tools platform with Result Workspace.
 
-## Local Setup
+## Tech Stack
+| Technology | Version |
+| --- | --- |
+| Next.js | 16 |
+| React | 19 |
+| TypeScript | strict |
+| Tailwind CSS | v4 |
+| ESLint | latest |
+| npm | latest |
+| Node.js | 24 LTS |
+
+## Project Structure
+- `src/app` - Routes
+- `src/config` - Site config
+- `src/data` - Tool catalog JSON
+- `src/lib/tools` - Catalog types and loader
+- `.agents/rules/` - Agent specific rules and context
+- `docs/` - Detailed documentation
+
+## Available Scripts
 
 ```bash
-# Install dependencies
-npm install
-
 # Start development server (Turbopack)
 npm run dev
+
+# Build
+npm run build
+
+# Start production server
+npm run start
 
 # Lint
 npm run lint
 
-# Production build
-npm run build
+# Typecheck
+npm run typecheck
+
+# Validate Catalog
+npm run validate:catalog
+
+# Run all quality gates
+npm run check
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Documentation
+Please refer to the `docs/` folder for all key documents.
 
 ## Security
 
@@ -31,3 +62,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 > Use `.env.local` for local secrets. It is listed in `.gitignore` and will not be tracked.
 >
 > If you need to document required environment variables, use `.env.example` with placeholder values only.
+
+## License
+[Placeholder for future decision]
