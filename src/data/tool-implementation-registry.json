@@ -1,0 +1,20 @@
+{
+  "word-character-counter": {
+    "slug": "word-character-counter",
+    "implementationKey": "word-character-counter",
+    "componentFile": "src/components/tools/implementations/WordCharacterCounterTool.tsx",
+    "resultAdapter": "simple",
+    "processingMode": "client",
+    "releasedStatus": "production",
+    "releasedAt": "2026-07-30T00:00:00.000Z"
+  },
+  "case-converter": {
+    "slug": "case-converter",
+    "implementationKey": "case-converter",
+    "componentFile": "src/components/tools/implementations/CaseConverterTool.tsx",
+    "resultAdapter": "text",
+    "processingMode": "client",
+    "releasedStatus": "production",
+    "releasedAt": "2026-07-30T00:00:00.000Z"
+  }
+}

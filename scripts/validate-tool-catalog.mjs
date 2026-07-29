@@ -119,11 +119,6 @@ try {
       hasError = true;
     }
 
-    if (tool.implementationStatus === 'production' || tool.implementationStatus === 'beta' || tool.implementationStatus === 'alpha') {
-      console.error(`Error in tool "${tool.name}": Status cannot be '${tool.implementationStatus}' currently (must be 'planned')`);
-      hasError = true;
-    }
-
     if (ids.has(tool.id)) {
       console.error(`Error in tool "${tool.name}": Duplicate id "${tool.id}"`);
       hasError = true;

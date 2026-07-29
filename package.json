@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:text-tools": "node --test tests/text-tools/*.test.mjs",
     "validate:catalog": "node scripts/validate-tool-catalog.mjs",
     "validate:adapters": "node scripts/validate-adapter-registry.mjs",
-    "check": "node scripts/validate-tool-catalog.mjs && node scripts/validate-adapter-registry.mjs && eslint && tsc --noEmit && next build"
+    "validate:implementations": "node scripts/validate-tool-implementations.mjs",
+    "check": "node scripts/validate-tool-catalog.mjs && node scripts/validate-adapter-registry.mjs && node scripts/validate-tool-implementations.mjs && npm run test:text-tools && eslint && tsc --noEmit && next build"
   },
   "dependencies": {
     "lucide-react": "^1.27.0",

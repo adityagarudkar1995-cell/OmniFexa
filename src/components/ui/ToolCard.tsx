@@ -15,13 +15,17 @@ export function ToolCard({ tool }: ToolCardProps) {
     ? CATEGORY_ICONS[categoryMeta.iconName]
     : CATEGORY_ICONS.Wand2;
 
+  const isAvailable = tool.implementationStatus === 'production';
+
   return (
     <div className="relative bg-surface-0 border border-border-default rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      {tool.implementationStatus === 'planned' && (
-        <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4">
+        {isAvailable ? (
+          <Badge variant="status">Available</Badge>
+        ) : (
           <Badge variant="status">Coming Soon</Badge>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex flex-col gap-3">
         <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-50 text-primary-600">

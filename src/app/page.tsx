@@ -1,4 +1,5 @@
 import { HeroSection } from '@/components/home/HeroSection';
+import { AvailableToolsSection } from '@/components/home/AvailableToolsSection';
 import { FeaturedToolsSection } from '@/components/home/FeaturedToolsSection';
 import { CategoriesSection } from '@/components/home/CategoriesSection';
 import { ScreenshotEditorSection } from '@/components/home/ScreenshotEditorSection';
@@ -9,6 +10,7 @@ export default function Home() {
   return (
     <>
       <HeroSection />
+      <AvailableToolsSection />
       <FeaturedToolsSection />
       <CategoriesSection />
       <ScreenshotEditorSection />

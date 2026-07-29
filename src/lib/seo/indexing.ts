@@ -3,50 +3,54 @@ import type { ToolEntry } from '@/lib/tools/types';
 import { siteConfig } from '@/config/site';
 
 /**
- * Returns whether a tool is eligible for search engine indexing.
- * Currently, only tools with status 'alpha', 'beta', or 'production' are indexable.
- * Planned tools MUST remain non-indexable to avoid thin/empty SEO pages.
+ * Checks if a tool should be indexed by search engines.
+ * Only tools with released status ('production', 'beta', or 'alpha') are indexable.
+ * Planned tools are strictly noindex.
  */
 export function isToolIndexable(tool: ToolEntry): boolean {
   return (
-    tool.implementationStatus === 'alpha' ||
+    tool.implementationStatus === 'production' ||
     tool.implementationStatus === 'beta' ||
-    tool.implementationStatus === 'production'
+    tool.implementationStatus === 'alpha'
   );
 }
 
 /**
- * Returns Robots metadata for a tool page based on its indexing status.
+ * Generates appropriate robots metadata object for a tool page.
  */
 export function getToolRobotsMetadata(tool: ToolEntry): Metadata['robots'] {
-  if (!isToolIndexable(tool)) {
+  if (isToolIndexable(tool)) {
     return {
-      index: false,
-      follow: false,
-      nocache: true,
+      index: true,
+      follow: true,
       googleBot: {
-        index: false,
-        follow: false,
+        index: true,
+        follow: true,
       },
     };
   }
 
   return {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
   };
 }
 
 /**
- * Returns the canonical URL path for a tool.
+ * Gets the canonical path for a tool page.
  */
 export function getToolCanonicalPath(tool: ToolEntry): string {
   return `/tools/${tool.slug}`;
 }
 
 /**
- * Returns the absolute canonical URL for a tool.
+ * Gets the absolute canonical URL for a tool page.
  */
 export function getToolCanonicalUrl(tool: ToolEntry): string {
-  return `${siteConfig.url.production}/tools/${tool.slug}`;
+  return `${siteConfig.url}/tools/${tool.slug}`;
 }

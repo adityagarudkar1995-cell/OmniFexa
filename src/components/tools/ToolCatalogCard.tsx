@@ -22,6 +22,8 @@ export function ToolCatalogCard({ tool }: ToolCatalogCardProps) {
   const outputDisplay = tool.outputFormats.slice(0, maxVisibleFormats);
   const remainingOutputs = tool.outputFormats.length - maxVisibleFormats;
 
+  const isAvailable = tool.implementationStatus === 'production';
+
   return (
     <div className="relative bg-surface-0 border border-border-default rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between h-full">
       <div>
@@ -31,7 +33,11 @@ export function ToolCatalogCard({ tool }: ToolCatalogCardProps) {
             <IconComponent className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-1.5">
-            <Badge variant="status">In Development</Badge>
+            {isAvailable ? (
+              <Badge variant="status">Available</Badge>
+            ) : (
+              <Badge variant="status">Coming Soon</Badge>
+            )}
           </div>
         </div>
 
