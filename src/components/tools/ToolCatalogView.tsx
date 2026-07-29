@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
@@ -18,24 +18,61 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // URL searchParams are the single source of truth for filter selections
+  // URL searchParams are the single source of truth for committed filters
   const urlQuery = searchParams.get('q') || '';
   const selectedCategory = searchParams.get('category') || '';
   const selectedPhase = searchParams.get('phase') || '';
   const selectedStatus = searchParams.get('status') || '';
   const selectedMode = searchParams.get('mode') || '';
 
-  // Local state for free-text typing input
+  // Local state for free-text search input
   const [localQueryState, setLocalQueryState] = useState(urlQuery);
   const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
-  // Sync local typing state during render if URL query changes externally (e.g. Back/Forward)
+  // Sync local typing state during render if URL search query changes externally (e.g. Back/Forward navigation)
   if (prevUrlQuery !== urlQuery) {
     setPrevUrlQuery(urlQuery);
     setLocalQueryState(urlQuery);
   }
 
   const localQuery = localQueryState;
+
+  // Helper to update a single URL query parameter while preserving all other current URL searchParams
+  const setSingleParam = useCallback(
+    (key: string, val: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const trimmed = val.trim();
+
+      if (trimmed) {
+        params.set(key, trimmed);
+      } else {
+        params.delete(key);
+      }
+
+      const queryString = params.toString();
+      const targetPath = queryString ? `${pathname}?${queryString}` : pathname;
+      const currentPath = searchParams.toString() ? `${pathname}?${searchParams.toString()}` : pathname;
+
+      if (targetPath !== currentPath) {
+        router.replace(targetPath, { scroll: false });
+      }
+    },
+    [pathname, router, searchParams]
+  );
+
+  // Effect-based debounced update for free-text search query (~300ms)
+  // Automatically cancels pending timers when localQuery, urlQuery, or searchParams change
+  useEffect(() => {
+    if (localQuery.trim() === urlQuery.trim()) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSingleParam('q', localQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [localQuery, urlQuery, setSingleParam]);
 
   // Derived unique status options from catalog projection
   const availableStatuses = useMemo(() => {
@@ -45,92 +82,25 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
 
   const categories = useMemo(() => getCategoryCounts(catalog), [catalog]);
 
-  // Helper to build URL string and update browser URL without scrolling
-  const updateUrl = useCallback(
-    (newParams: { q?: string; category?: string; phase?: string; status?: string; mode?: string }) => {
-      const params = new URLSearchParams(searchParams.toString());
-
-      const updateParam = (key: string, val?: string) => {
-        if (val && val.trim() !== '') {
-          params.set(key, val.trim());
-        } else {
-          params.delete(key);
-        }
-      };
-
-      updateParam('q', newParams.q);
-      updateParam('category', newParams.category);
-      updateParam('phase', newParams.phase);
-      updateParam('status', newParams.status);
-      updateParam('mode', newParams.mode);
-
-      const queryString = params.toString();
-      const newPath = queryString ? `${pathname}?${queryString}` : pathname;
-
-      router.replace(newPath, { scroll: false });
-    },
-    [router, pathname, searchParams]
-  );
-
-  // Debounced search query URL update (~300ms)
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleQueryChange = (val: string) => {
-    setLocalQueryState(val);
-
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      updateUrl({
-        q: val,
-        category: selectedCategory,
-        phase: selectedPhase,
-        status: selectedStatus,
-        mode: selectedMode,
-      });
-    }, 300);
-  };
-
   const handleCategorySelect = (catKey: string) => {
-    updateUrl({
-      q: localQuery,
-      category: catKey,
-      phase: selectedPhase,
-      status: selectedStatus,
-      mode: selectedMode,
-    });
+    setSingleParam('category', catKey);
   };
 
   const handlePhaseSelect = (phaseVal: string) => {
-    updateUrl({
-      q: localQuery,
-      category: selectedCategory,
-      phase: phaseVal,
-      status: selectedStatus,
-      mode: selectedMode,
-    });
+    setSingleParam('phase', phaseVal);
   };
 
   const handleStatusSelect = (statusVal: string) => {
-    updateUrl({
-      q: localQuery,
-      category: selectedCategory,
-      phase: selectedPhase,
-      status: statusVal,
-      mode: selectedMode,
-    });
+    setSingleParam('status', statusVal);
   };
 
   const handleModeSelect = (modeVal: string) => {
-    updateUrl({
-      q: localQuery,
-      category: selectedCategory,
-      phase: selectedPhase,
-      status: selectedStatus,
-      mode: modeVal,
-    });
+    setSingleParam('mode', modeVal);
+  };
+
+  const handleClearQuery = () => {
+    setLocalQueryState('');
+    setSingleParam('q', '');
   };
 
   const resetAllFilters = () => {
@@ -144,8 +114,8 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
     params.delete('mode');
 
     const queryString = params.toString();
-    const newPath = queryString ? `${pathname}?${queryString}` : pathname;
-    router.replace(newPath, { scroll: false });
+    const targetPath = queryString ? `${pathname}?${queryString}` : pathname;
+    router.replace(targetPath, { scroll: false });
   };
 
   const filteredTools = useMemo(() => {
@@ -190,7 +160,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
               id="tool-search-input"
               type="text"
               value={localQuery}
-              onChange={(e) => handleQueryChange(e.target.value)}
+              onChange={(e) => setLocalQueryState(e.target.value)}
               placeholder="Search 187 tools by name, keywords, or Hinglish phrases..."
               className="w-full h-12 bg-surface-50 border border-border-default rounded-xl pl-11 pr-10 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all min-h-[44px]"
             />
@@ -198,7 +168,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
             {localQuery && (
               <button
                 type="button"
-                onClick={() => handleQueryChange('')}
+                onClick={handleClearQuery}
                 aria-label="Clear search input"
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary text-xs font-semibold p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
@@ -316,7 +286,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
                 Search: &quot;{localQuery}&quot;
                 <button
                   type="button"
-                  onClick={() => handleQueryChange('')}
+                  onClick={handleClearQuery}
                   aria-label="Remove search query filter"
                   className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
                 >

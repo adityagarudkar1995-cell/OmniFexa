@@ -7,16 +7,18 @@ export const ADAPTER_REGISTRY: Record<ResultAdapterType, AdapterContract> =
 
 /** Get the contract for a given adapter type */
 export function getAdapterContract(adapterType: ResultAdapterType): AdapterContract {
-  const contract = ADAPTER_REGISTRY[adapterType];
-  if (!contract) {
+  if (!isValidAdapter(adapterType)) {
     throw new Error(`Unsupported workspace adapter type: ${adapterType}`);
   }
-  return contract;
+  return ADAPTER_REGISTRY[adapterType];
 }
 
-/** Check if a string is a valid registered adapter type */
+/** Check if a string is a valid registered adapter type (rejects prototype properties) */
 export function isValidAdapter(adapterType: string): adapterType is ResultAdapterType {
-  return adapterType in ADAPTER_REGISTRY;
+  return (
+    typeof adapterType === 'string' &&
+    Object.prototype.hasOwnProperty.call(ADAPTER_REGISTRY, adapterType)
+  );
 }
 
 /** Validate that all items in a catalog map to a valid registered adapter */
