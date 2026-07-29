@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import type { AdapterContract, WorkspaceInput } from '@/lib/result-workspace/types';
 import Badge from '@/components/ui/Badge';

@@ -1,65 +1,43 @@
+import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { toolCatalog } from '@/lib/tools/catalog';
+import { createCatalogProjection } from '@/lib/tools/projection';
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
-import { ToolCatalogView, type ToolCatalogProjectionEntry } from '@/components/tools/ToolCatalogView';
+import { ToolCatalogView } from '@/components/tools/ToolCatalogView';
 
 export const metadata: Metadata = {
-  title: 'Tool Catalog — 187 Free Online Utilities | OmniFexa',
+  title: 'OmniFexa Tool Catalog — 187 Planned Online Tools',
   description:
-    'Browse OmniFexa’s complete catalog of 187 privacy-first online tools for PDF, images, document conversion, text, developer utilities, and calculators.',
+    'Explore OmniFexa’s planned catalog of PDF, image, screenshot, OCR, document-conversion, text, developer and calculator tools.',
   alternates: {
     canonical: '/tools',
   },
 };
 
-interface ToolsPageProps {
-  searchParams: Promise<{
-    q?: string;
-    category?: string;
-    phase?: string;
-  }>;
-}
-
-export default async function ToolsPage({ searchParams }: ToolsPageProps) {
-  const params = await searchParams;
-
-  // Minimal serializable catalog projection for client filtering (Mandatory Correction #4)
-  const projectionCatalog: ToolCatalogProjectionEntry[] = toolCatalog.map((tool) => ({
-    id: tool.id,
-    slug: tool.slug,
-    name: tool.name,
-    shortDescription: tool.shortDescription,
-    category: tool.category,
-    subcategory: tool.subcategory,
-    keywords: tool.keywords,
-    hinglishKeywords: tool.hinglishKeywords,
-    phase: tool.phase,
-    implementationStatus: tool.implementationStatus,
-    processingMode: tool.processingMode,
-    resultAdapter: tool.resultAdapter,
-    inputFormats: tool.inputFormats,
-    outputFormats: tool.outputFormats,
-    featured: tool.featured,
-  }));
+export default function ToolsPage() {
+  const projectionCatalog = createCatalogProjection(toolCatalog);
 
   return (
     <div className="py-12 sm:py-16">
       <Container size="xl">
         <div className="mb-10 text-center">
           <SectionHeading
-            badge="Tool Catalog"
-            title="All 187 Online Tools & Utilities"
-            subtitle="Search and filter through our full planned catalog. Filter by category, processing mode, or implementation phase."
+            badge="Roadmap Catalog"
+            title="OmniFexa Planned Tool Catalog"
+            subtitle="Explore 187 planned online tools across 15 categories. All tools are currently in development as part of our privacy-first roadmap."
           />
         </div>
 
-        <ToolCatalogView
-          catalog={projectionCatalog}
-          initialCategory={params.category || ''}
-          initialQuery={params.q || ''}
-          initialPhase={params.phase || ''}
-        />
+        <Suspense
+          fallback={
+            <div className="p-12 text-center text-text-tertiary bg-surface-0 border border-border-default rounded-2xl">
+              Loading catalog tools...
+            </div>
+          }
+        >
+          <ToolCatalogView catalog={projectionCatalog} />
+        </Suspense>
       </Container>
     </div>
   );

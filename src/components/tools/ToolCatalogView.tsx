@@ -1,70 +1,162 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import type { ToolCategory, Phase, ProcessingMode, ToolEntry } from '@/lib/tools/types';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Search } from 'lucide-react';
+import type { ToolCatalogProjectionEntry } from '@/lib/tools/projection';
 import { getCategoryCounts } from '@/lib/categories';
-import { ToolCard } from '@/components/ui/ToolCard';
+import { ToolCatalogCard } from './ToolCatalogCard';
 import Button from '@/components/ui/Button';
-
-export interface ToolCatalogProjectionEntry {
-  id: string;
-  slug: string;
-  name: string;
-  shortDescription: string;
-  category: ToolCategory;
-  subcategory: string;
-  keywords: string[];
-  hinglishKeywords: string[];
-  phase: Phase;
-  implementationStatus: 'planned' | 'in-progress' | 'alpha' | 'beta' | 'production';
-  processingMode: ProcessingMode;
-  resultAdapter: 'pdf' | 'image' | 'text' | 'code' | 'simple' | 'media' | 'whiteboard';
-  inputFormats: string[];
-  outputFormats: string[];
-  featured: boolean;
-}
 
 interface ToolCatalogViewProps {
   catalog: ToolCatalogProjectionEntry[];
-  initialCategory?: string;
-  initialQuery?: string;
-  initialPhase?: string;
 }
 
-export function ToolCatalogView({
-  catalog,
-  initialCategory = '',
-  initialQuery = '',
-  initialPhase = '',
-}: ToolCatalogViewProps) {
-  const [query, setQuery] = useState(() => initialQuery);
-  const [selectedCategory, setSelectedCategory] = useState(() => initialCategory);
-  const [selectedPhase, setSelectedPhase] = useState(() => initialPhase);
-  const [selectedMode, setSelectedMode] = useState('');
+export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // URL searchParams are the single source of truth for filter selections
+  const urlQuery = searchParams.get('q') || '';
+  const selectedCategory = searchParams.get('category') || '';
+  const selectedPhase = searchParams.get('phase') || '';
+  const selectedStatus = searchParams.get('status') || '';
+  const selectedMode = searchParams.get('mode') || '';
+
+  // Local state for free-text typing input
+  const [localQueryState, setLocalQueryState] = useState(urlQuery);
+  const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
+
+  // Sync local typing state during render if URL query changes externally (e.g. Back/Forward)
+  if (prevUrlQuery !== urlQuery) {
+    setPrevUrlQuery(urlQuery);
+    setLocalQueryState(urlQuery);
+  }
+
+  const localQuery = localQueryState;
+
+  // Derived unique status options from catalog projection
+  const availableStatuses = useMemo(() => {
+    const set = new Set(catalog.map((t) => t.implementationStatus));
+    return Array.from(set);
+  }, [catalog]);
 
   const categories = useMemo(() => getCategoryCounts(catalog), [catalog]);
 
+  // Helper to build URL string and update browser URL without scrolling
+  const updateUrl = useCallback(
+    (newParams: { q?: string; category?: string; phase?: string; status?: string; mode?: string }) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      const updateParam = (key: string, val?: string) => {
+        if (val && val.trim() !== '') {
+          params.set(key, val.trim());
+        } else {
+          params.delete(key);
+        }
+      };
+
+      updateParam('q', newParams.q);
+      updateParam('category', newParams.category);
+      updateParam('phase', newParams.phase);
+      updateParam('status', newParams.status);
+      updateParam('mode', newParams.mode);
+
+      const queryString = params.toString();
+      const newPath = queryString ? `${pathname}?${queryString}` : pathname;
+
+      router.replace(newPath, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  // Debounced search query URL update (~300ms)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleQueryChange = (val: string) => {
+    setLocalQueryState(val);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      updateUrl({
+        q: val,
+        category: selectedCategory,
+        phase: selectedPhase,
+        status: selectedStatus,
+        mode: selectedMode,
+      });
+    }, 300);
+  };
+
+  const handleCategorySelect = (catKey: string) => {
+    updateUrl({
+      q: localQuery,
+      category: catKey,
+      phase: selectedPhase,
+      status: selectedStatus,
+      mode: selectedMode,
+    });
+  };
+
+  const handlePhaseSelect = (phaseVal: string) => {
+    updateUrl({
+      q: localQuery,
+      category: selectedCategory,
+      phase: phaseVal,
+      status: selectedStatus,
+      mode: selectedMode,
+    });
+  };
+
+  const handleStatusSelect = (statusVal: string) => {
+    updateUrl({
+      q: localQuery,
+      category: selectedCategory,
+      phase: selectedPhase,
+      status: statusVal,
+      mode: selectedMode,
+    });
+  };
+
+  const handleModeSelect = (modeVal: string) => {
+    updateUrl({
+      q: localQuery,
+      category: selectedCategory,
+      phase: selectedPhase,
+      status: selectedStatus,
+      mode: modeVal,
+    });
+  };
+
+  const resetAllFilters = () => {
+    setLocalQueryState('');
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('q');
+    params.delete('category');
+    params.delete('phase');
+    params.delete('status');
+    params.delete('mode');
+
+    const queryString = params.toString();
+    const newPath = queryString ? `${pathname}?${queryString}` : pathname;
+    router.replace(newPath, { scroll: false });
+  };
+
   const filteredTools = useMemo(() => {
-    const q = query.toLowerCase().trim();
+    const q = localQuery.toLowerCase().trim();
 
     return catalog.filter((tool) => {
-      // Category filter
-      if (selectedCategory && tool.category !== selectedCategory) {
-        return false;
-      }
+      if (selectedCategory && tool.category !== selectedCategory) return false;
+      if (selectedPhase && tool.phase !== selectedPhase) return false;
+      if (selectedStatus && tool.implementationStatus !== selectedStatus) return false;
+      if (selectedMode && tool.processingMode !== selectedMode) return false;
 
-      // Phase filter
-      if (selectedPhase && tool.phase !== selectedPhase) {
-        return false;
-      }
-
-      // Mode filter
-      if (selectedMode && tool.processingMode !== selectedMode) {
-        return false;
-      }
-
-      // Search query filter
       if (q) {
         const name = tool.name.toLowerCase();
         const desc = tool.shortDescription.toLowerCase();
@@ -78,52 +170,55 @@ export function ToolCatalogView({
 
       return true;
     });
-  }, [catalog, query, selectedCategory, selectedPhase, selectedMode]);
+  }, [catalog, localQuery, selectedCategory, selectedPhase, selectedStatus, selectedMode]);
 
   const hasActiveFilters = Boolean(
-    query || selectedCategory || selectedPhase || selectedMode
+    localQuery || selectedCategory || selectedPhase || selectedStatus || selectedMode
   );
-
-  const resetFilters = () => {
-    setQuery('');
-    setSelectedCategory('');
-    setSelectedPhase('');
-    setSelectedMode('');
-  };
 
   return (
     <div className="space-y-8">
-      {/* Search & Filters Controls */}
-      <div className="bg-surface-0 border border-border-default rounded-2xl p-6 shadow-sm space-y-4">
+      {/* Search & Filter Controls */}
+      <div className="bg-surface-0 border border-border-default rounded-2xl p-6 shadow-sm space-y-5">
         {/* Search bar */}
-        <div className="relative">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search 187 tools by name, keywords, or Hinglish phrases..."
-            className="w-full h-12 bg-surface-50 border border-border-default rounded-xl pl-11 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
-          />
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary text-lg">
-            🔍
-          </span>
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary text-xs font-semibold"
-            >
-              Clear
-            </button>
-          )}
+        <div>
+          <label htmlFor="tool-search-input" className="sr-only">
+            Search catalog tools
+          </label>
+          <div className="relative">
+            <input
+              id="tool-search-input"
+              type="text"
+              value={localQuery}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              placeholder="Search 187 tools by name, keywords, or Hinglish phrases..."
+              className="w-full h-12 bg-surface-50 border border-border-default rounded-xl pl-11 pr-10 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all min-h-[44px]"
+            />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary pointer-events-none" />
+            {localQuery && (
+              <button
+                type="button"
+                onClick={() => handleQueryChange('')}
+                aria-label="Clear search input"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary text-xs font-semibold p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Category Pills / Dropdowns */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-          {/* Select Category */}
+        {/* Category Pills */}
+        <div>
+          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">
+            Category
+          </label>
           <div className="flex items-center gap-2 overflow-x-auto py-1 max-w-full">
             <button
-              onClick={() => setSelectedCategory('')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              type="button"
+              onClick={() => handleCategorySelect('')}
+              aria-pressed={!selectedCategory}
+              className={`px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors min-h-[44px] ${
                 !selectedCategory
                   ? 'bg-primary-600 text-white'
                   : 'bg-surface-100 text-text-secondary hover:bg-surface-200'
@@ -134,8 +229,10 @@ export function ToolCatalogView({
             {categories.map((cat) => (
               <button
                 key={cat.key}
-                onClick={() => setSelectedCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                type="button"
+                onClick={() => handleCategorySelect(cat.key)}
+                aria-pressed={selectedCategory === cat.key}
+                className={`px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors min-h-[44px] ${
                   selectedCategory === cat.key
                     ? 'bg-primary-600 text-white'
                     : 'bg-surface-100 text-text-secondary hover:bg-surface-200'
@@ -147,14 +244,18 @@ export function ToolCatalogView({
           </div>
         </div>
 
-        {/* Phase & Processing Mode Secondary Filters */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-border-subtle text-xs">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Phase Dropdown */}
+        {/* Dropdown Filters Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-border-subtle text-xs">
+          {/* Phase Filter */}
+          <div>
+            <label htmlFor="phase-select" className="block text-[11px] font-medium text-text-tertiary mb-1">
+              Development Phase
+            </label>
             <select
+              id="phase-select"
               value={selectedPhase}
-              onChange={(e) => setSelectedPhase(e.target.value)}
-              className="bg-surface-50 border border-border-default rounded-lg px-2.5 py-1.5 text-text-secondary focus:outline-none focus:border-primary-500"
+              onChange={(e) => handlePhaseSelect(e.target.value)}
+              className="w-full bg-surface-50 border border-border-default rounded-xl px-3 py-2 text-text-secondary focus:outline-none focus:border-primary-500 min-h-[44px]"
             >
               <option value="">All Roadmap Phases</option>
               <option value="phase-2-core-launch">Phase 2: Core Launch</option>
@@ -163,12 +264,38 @@ export function ToolCatalogView({
               <option value="phase-5-ai-tools">Phase 5: AI Tools</option>
               <option value="phase-6-media-and-growth">Phase 6: Media & Growth</option>
             </select>
+          </div>
 
-            {/* Mode Dropdown */}
+          {/* Status Filter */}
+          <div>
+            <label htmlFor="status-select" className="block text-[11px] font-medium text-text-tertiary mb-1">
+              Implementation Status
+            </label>
             <select
+              id="status-select"
+              value={selectedStatus}
+              onChange={(e) => handleStatusSelect(e.target.value)}
+              className="w-full bg-surface-50 border border-border-default rounded-xl px-3 py-2 text-text-secondary focus:outline-none focus:border-primary-500 min-h-[44px]"
+            >
+              <option value="">All Statuses</option>
+              {availableStatuses.map((st) => (
+                <option key={st} value={st}>
+                  {st.charAt(0).toUpperCase() + st.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Mode Filter */}
+          <div>
+            <label htmlFor="mode-select" className="block text-[11px] font-medium text-text-tertiary mb-1">
+              Processing Mode
+            </label>
+            <select
+              id="mode-select"
               value={selectedMode}
-              onChange={(e) => setSelectedMode(e.target.value)}
-              className="bg-surface-50 border border-border-default rounded-lg px-2.5 py-1.5 text-text-secondary focus:outline-none focus:border-primary-500"
+              onChange={(e) => handleModeSelect(e.target.value)}
+              className="w-full bg-surface-50 border border-border-default rounded-xl px-3 py-2 text-text-secondary focus:outline-none focus:border-primary-500 min-h-[44px]"
             >
               <option value="">All Processing Modes</option>
               <option value="client">Client (Browser On-Device)</option>
@@ -177,21 +304,100 @@ export function ToolCatalogView({
               <option value="research-required">Research Required</option>
             </select>
           </div>
-
-          {/* Reset Filters Action */}
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="text-xs">
-              Reset Filters
-            </Button>
-          )}
         </div>
+
+        {/* Active Filter Chips */}
+        {hasActiveFilters && (
+          <div className="pt-3 border-t border-border-subtle flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-text-tertiary mr-1">Active filters:</span>
+
+            {localQuery && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-200 text-xs font-medium text-text-primary border border-border-default">
+                Search: &quot;{localQuery}&quot;
+                <button
+                  type="button"
+                  onClick={() => handleQueryChange('')}
+                  aria-label="Remove search query filter"
+                  className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {selectedCategory && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-200 text-xs font-medium text-text-primary border border-border-default">
+                Category: {categories.find((c) => c.key === selectedCategory)?.label || selectedCategory}
+                <button
+                  type="button"
+                  onClick={() => handleCategorySelect('')}
+                  aria-label="Remove category filter"
+                  className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {selectedPhase && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-200 text-xs font-medium text-text-primary border border-border-default">
+                Phase: {selectedPhase.replace('phase-', 'Phase ').replace('-', ': ')}
+                <button
+                  type="button"
+                  onClick={() => handlePhaseSelect('')}
+                  aria-label="Remove phase filter"
+                  className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {selectedStatus && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-200 text-xs font-medium text-text-primary border border-border-default">
+                Status: {selectedStatus}
+                <button
+                  type="button"
+                  onClick={() => handleStatusSelect('')}
+                  aria-label="Remove status filter"
+                  className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            {selectedMode && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-200 text-xs font-medium text-text-primary border border-border-default">
+                Mode: {selectedMode}
+                <button
+                  type="button"
+                  onClick={() => handleModeSelect('')}
+                  aria-label="Remove mode filter"
+                  className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetAllFilters}
+              className="text-xs ml-auto min-h-[44px]"
+            >
+              Reset All Filters
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Results Header */}
       <div className="flex items-center justify-between text-sm text-text-secondary">
         <span>
           Showing <strong className="text-text-primary">{filteredTools.length}</strong> of{' '}
-          <strong className="text-text-primary">{catalog.length}</strong> tools
+          <strong className="text-text-primary">{catalog.length}</strong> planned tools
         </span>
         {hasActiveFilters && (
           <span className="text-xs text-text-tertiary">Filtered catalog view</span>
@@ -201,23 +407,25 @@ export function ToolCatalogView({
       {/* Empty State */}
       {filteredTools.length === 0 && (
         <div className="bg-surface-0 border border-border-default rounded-2xl p-12 text-center space-y-4">
-          <div className="text-3xl">🔍</div>
+          <div className="w-12 h-12 rounded-full bg-surface-100 flex items-center justify-center mx-auto text-xl text-text-tertiary">
+            🔍
+          </div>
           <h3 className="font-semibold text-text-primary text-lg">No matching tools found</h3>
           <p className="text-sm text-text-secondary max-w-md mx-auto">
             We couldn&apos;t find any tools matching your active search or filter selection. Try resetting filters or searching for alternative terms like &quot;PDF&quot;, &quot;image&quot;, or &quot;converter&quot;.
           </p>
-          <Button variant="secondary" size="md" onClick={resetFilters}>
+          <Button variant="secondary" size="md" onClick={resetAllFilters}>
             Reset All Filters
           </Button>
         </div>
       )}
 
-      {/* Tool Grid */}
+      {/* Tool Grid using dedicated ToolCatalogCard */}
       {filteredTools.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {filteredTools.map((tool) => (
             <Link key={tool.id} href={`/tools/${tool.slug}`} className="block group">
-              <ToolCard tool={tool as unknown as ToolEntry} />
+              <ToolCatalogCard tool={tool} />
             </Link>
           ))}
         </div>

@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "validate:catalog": "node scripts/validate-tool-catalog.mjs",
-    "check": "node scripts/validate-tool-catalog.mjs && eslint && tsc --noEmit && next build"
+    "validate:adapters": "node scripts/validate-adapter-registry.mjs",
+    "check": "node scripts/validate-tool-catalog.mjs && node scripts/validate-adapter-registry.mjs && eslint && tsc --noEmit && next build"
   },
   "dependencies": {
     "lucide-react": "^1.27.0",

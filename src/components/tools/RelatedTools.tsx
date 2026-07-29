@@ -9,36 +9,72 @@ interface RelatedToolsProps {
   maxCount?: number;
 }
 
+function normalize(val: string): string {
+  return val.trim().toLowerCase();
+}
+
+/**
+ * Deterministic scoring function using Set-based unique signal comparisons.
+ */
 function calculateRelevanceScore(current: ToolEntry, target: ToolEntry): number {
   if (current.id === target.id) return -1;
 
   let score = 0;
 
-  // Same category
+  // Signal 1: Same category (+40)
   if (current.category === target.category) {
     score += 40;
   }
 
-  // Same result adapter
+  // Signal 2: Current tool output matches candidate tool input (compatible next-step workflow) (+25)
+  const currentOutputs = new Set(current.outputFormats.map(normalize));
+  const targetInputs = new Set(target.inputFormats.map(normalize));
+  let isNextStepWorkflow = false;
+  for (const fmt of currentOutputs) {
+    if (targetInputs.has(fmt)) {
+      isNextStepWorkflow = true;
+      break;
+    }
+  }
+  if (isNextStepWorkflow) {
+    score += 25;
+  }
+
+  // Signal 3: Same result adapter (+15)
   if (current.resultAdapter === target.resultAdapter) {
-    score += 20;
+    score += 15;
   }
 
-  // Shared keywords overlap
-  const currentKw = new Set(current.keywords.map((k) => k.toLowerCase()));
-  for (const kw of target.keywords) {
-    if (currentKw.has(kw.toLowerCase())) {
-      score += 10;
+  // Signal 4: Unique exact shared keywords (+10 each, capped at +30)
+  const currentKw = new Set(current.keywords.map(normalize));
+  const targetKw = new Set(target.keywords.map(normalize));
+  let kwCount = 0;
+  for (const kw of targetKw) {
+    if (currentKw.has(kw)) {
+      kwCount++;
     }
   }
+  score += Math.min(kwCount * 10, 30);
 
-  // Format overlap (input or output)
-  const currentInputs = new Set(current.inputFormats);
-  for (const fmt of target.inputFormats) {
+  // Signal 5: Unique input format overlap (+5 each, capped at +15)
+  const currentInputs = new Set(current.inputFormats.map(normalize));
+  let inputOverlapCount = 0;
+  for (const fmt of targetInputs) {
     if (currentInputs.has(fmt)) {
-      score += 5;
+      inputOverlapCount++;
     }
   }
+  score += Math.min(inputOverlapCount * 5, 15);
+
+  // Signal 6: Unique output format overlap (+5 each, capped at +15)
+  let outputOverlapCount = 0;
+  const targetOutputs = new Set(target.outputFormats.map(normalize));
+  for (const fmt of targetOutputs) {
+    if (currentOutputs.has(fmt)) {
+      outputOverlapCount++;
+    }
+  }
+  score += Math.min(outputOverlapCount * 5, 15);
 
   return score;
 }

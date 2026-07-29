@@ -6,10 +6,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const catalogPath = resolve(__dirname, '../src/data/tool-catalog.json');
+const registryPath = resolve(__dirname, '../src/data/result-adapter-registry.json');
 
 try {
-  const content = readFileSync(catalogPath, 'utf-8');
-  const catalog = JSON.parse(content);
+  const catalogContent = readFileSync(catalogPath, 'utf-8');
+  const catalog = JSON.parse(catalogContent);
+
+  const registryContent = readFileSync(registryPath, 'utf-8');
+  const registry = JSON.parse(registryContent);
   
   if (!Array.isArray(catalog)) {
     console.error('Error: Catalog is not an array.');
@@ -30,7 +34,7 @@ try {
   ];
 
   const validProcessingModes = ['client', 'server', 'hybrid', 'research-required'];
-  const validResultAdapters = ['pdf', 'image', 'text', 'code', 'simple', 'media', 'whiteboard'];
+  const validResultAdapters = Object.keys(registry);
   const validStatuses = ['planned', 'in-progress', 'alpha', 'beta', 'production'];
 
   const kebabRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -96,7 +100,7 @@ try {
     }
 
     if (!validResultAdapters.includes(tool.resultAdapter)) {
-      console.error(`Error in tool "${tool.name}": Invalid resultAdapter "${tool.resultAdapter}". Must map to one of: ${validResultAdapters.join(', ')}`);
+      console.error(`Error in tool "${tool.name}": Invalid resultAdapter "${tool.resultAdapter}". Must map to one of registered adapters: ${validResultAdapters.join(', ')}`);
       hasError = true;
     }
 

@@ -1,17 +1,15 @@
-'use client';
-
 import React from 'react';
 import type { AdapterContract } from '@/lib/result-workspace/types';
 import Button from '@/components/ui/Button';
 
 interface ResultWorkspaceToolbarProps {
   contract: AdapterContract;
-  onActionClick?: (actionId: string) => void;
+  isPreview?: boolean;
 }
 
 export function ResultWorkspaceToolbar({
   contract,
-  onActionClick,
+  isPreview = true,
 }: ResultWorkspaceToolbarProps) {
   return (
     <div className="h-12 px-4 sm:px-6 bg-surface-0 border-b border-border-default flex items-center justify-between gap-2 overflow-x-auto text-xs">
@@ -24,9 +22,11 @@ export function ResultWorkspaceToolbar({
             key={action.id}
             variant={action.variant === 'danger' ? 'ghost' : action.variant || 'ghost'}
             size="sm"
-            onClick={() => onActionClick?.(action.id)}
-            disabled={action.disabled}
-            className="text-xs font-medium"
+            disabled={isPreview}
+            aria-disabled={isPreview}
+            title={isPreview ? 'Interface preview — processing and editing controls are not connected yet.' : undefined}
+            onClick={undefined}
+            className="text-xs font-medium opacity-60 cursor-not-allowed"
           >
             {action.label}
           </Button>
