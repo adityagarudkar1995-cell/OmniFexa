@@ -1,10 +1,10 @@
 # Agent Briefs
 
 ## Purpose
-This directory holds per-feature agent briefs for Antigravity subagents.
+This directory holds per-feature agent briefs for Antigravity coding agents and subagents.
 
-## Status
-Currently empty — briefs will be added as features are designed and implemented.
+## Available Briefs
+- [tool-platform-shell.md](file:///d:/OmniFexa/docs/agent-briefs/tool-platform-shell.md) — Tool Catalog, Dynamic Tool Routes, SEO Indexing Guardrails, and Universal Result Workspace Shell
 
 ## Brief Template
 

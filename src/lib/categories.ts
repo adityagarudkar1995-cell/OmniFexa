@@ -1,4 +1,4 @@
-import type { ToolCategory, ToolEntry } from '@/lib/tools/types';
+import type { ToolCategory } from '@/lib/tools/types';
 
 export interface CategoryDisplay {
   key: ToolCategory;
@@ -107,7 +107,7 @@ export function getCategoryMeta(category: ToolCategory) {
   return CATEGORY_META[category];
 }
 
-export function getCategoryCounts(catalog: ToolEntry[]): CategoryDisplay[] {
+export function getCategoryCounts(catalog: Array<{ category: ToolCategory }>): CategoryDisplay[] {
   const countMap = new Map<ToolCategory, number>();
 
   for (const tool of catalog) {

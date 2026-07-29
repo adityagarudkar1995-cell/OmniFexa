@@ -24,8 +24,8 @@ export default function Header() {
   }, []);
 
   const navItems = [
-    { label: 'Tools', href: '#featured-tools' },
-    { label: 'Categories', href: '#categories' },
+    { label: 'Tools', href: '/tools' },
+    { label: 'Categories', href: '/tools' },
   ];
 
   const handleSearchClick = () => {

@@ -1,12 +1,15 @@
 # Development Roadmap
 
-## Phase 1: Foundation (CURRENT)
-- Project setup
-- Design system scaffolding
-- Result Workspace shell
-- Routing infrastructure
+## Phase 1: Foundation (COMPLETED)
+- Project setup & strict Next.js 16 scaffold
+- Design system scaffolding & theme management (light/dark/system)
+- Production-ready homepage & hero search
+- Canonical catalog (187 tools) with validation scripts
+- Tool Platform Shell (`/tools` catalog & `/tools/[slug]` pre-rendered static routes)
+- Universal Result Workspace contracts, capability registry & visual shell preview
+- SEO indexing guardrails (noindex for planned tools, sitemap exclusion)
 
-## Phase 2: Core Launch
+## Phase 2: Core Launch (NEXT)
 - Basic PDF tools (compress, merge, split)
 - Image tools (compress, resize, crop, format conversions)
 - Screenshot editor MVP (flagship)

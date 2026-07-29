@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { ToolCard } from '@/components/ui/ToolCard';
@@ -17,7 +18,9 @@ export function FeaturedToolsSection() {
 
         <div className="mt-10 sm:mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {featuredTools.map((tool) => (
-            <ToolCard key={tool.id} tool={tool} />
+            <Link key={tool.id} href={`/tools/${tool.slug}`} className="block group">
+              <ToolCard tool={tool} />
+            </Link>
           ))}
         </div>
       </Container>

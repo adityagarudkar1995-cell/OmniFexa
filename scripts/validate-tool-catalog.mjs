@@ -33,6 +33,8 @@ try {
   const validResultAdapters = ['pdf', 'image', 'text', 'code', 'simple', 'media', 'whiteboard'];
   const validStatuses = ['planned', 'in-progress', 'alpha', 'beta', 'production'];
 
+  const kebabRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
   const ids = new Set();
   const slugs = new Set();
 
@@ -63,8 +65,8 @@ try {
       hasError = true;
     }
 
-    if (typeof tool.slug !== 'string' || tool.slug.trim() === '') {
-      console.error(`Error in tool "${tool.name}": Invalid slug`);
+    if (typeof tool.slug !== 'string' || !kebabRegex.test(tool.slug)) {
+      console.error(`Error in tool "${tool.name}": Invalid slug "${tool.slug}". Must be URL-safe kebab-case.`);
       hasError = true;
     }
 
@@ -94,7 +96,7 @@ try {
     }
 
     if (!validResultAdapters.includes(tool.resultAdapter)) {
-      console.error(`Error in tool "${tool.name}": Invalid resultAdapter "${tool.resultAdapter}"`);
+      console.error(`Error in tool "${tool.name}": Invalid resultAdapter "${tool.resultAdapter}". Must map to one of: ${validResultAdapters.join(', ')}`);
       hasError = true;
     }
 
@@ -113,7 +115,7 @@ try {
       hasError = true;
     }
 
-    if (tool.implementationStatus === 'production' || tool.implementationStatus === 'beta') {
+    if (tool.implementationStatus === 'production' || tool.implementationStatus === 'beta' || tool.implementationStatus === 'alpha') {
       console.error(`Error in tool "${tool.name}": Status cannot be '${tool.implementationStatus}' currently (must be 'planned')`);
       hasError = true;
     }
@@ -143,6 +145,7 @@ try {
   console.log('Validation successful!');
   console.log(`Total tools: ${catalog.length}`);
   console.log(`Featured tools: ${featuredCount}`);
+  console.log(`Verified result adapters: ${validResultAdapters.length} adapters registered`);
   
   console.log('\nTools per category:');
   for (const [cat, count] of Object.entries(categoriesCount)) {

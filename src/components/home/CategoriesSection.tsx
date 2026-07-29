@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Container from '@/components/ui/Container';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { CategoryCard } from '@/components/ui/CategoryCard';
@@ -18,7 +19,9 @@ export function CategoriesSection() {
 
         <div className="mt-10 sm:mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {categories.map((cat) => (
-            <CategoryCard key={cat.key} category={cat} />
+            <Link key={cat.key} href={`/tools?category=${cat.key}`} className="block group">
+              <CategoryCard category={cat} />
+            </Link>
           ))}
         </div>
       </Container>

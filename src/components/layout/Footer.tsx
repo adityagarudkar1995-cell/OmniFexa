@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import SiteLogo from '@/components/ui/SiteLogo';
 
 export default function Footer() {
@@ -22,11 +23,11 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold text-sm text-text-primary mb-4">PDF Tools</h3>
             <ul className="space-y-3 text-sm text-text-secondary">
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Compress PDF</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Merge PDF</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Split PDF</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Edit PDF</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Sign PDF</span></li>
+              <li><Link href="/tools/compress-pdf" className="hover:text-text-primary transition-colors">Compress PDF</Link></li>
+              <li><Link href="/tools/merge-pdf" className="hover:text-text-primary transition-colors">Merge PDF</Link></li>
+              <li><Link href="/tools/split-pdf" className="hover:text-text-primary transition-colors">Split PDF</Link></li>
+              <li><Link href="/tools/edit-pdf" className="hover:text-text-primary transition-colors">Edit PDF</Link></li>
+              <li><Link href="/tools/sign-pdf" className="hover:text-text-primary transition-colors">Sign PDF</Link></li>
             </ul>
           </div>
 
@@ -34,11 +35,11 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold text-sm text-text-primary mb-4">More Tools</h3>
             <ul className="space-y-3 text-sm text-text-secondary">
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Image Compressor</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Screenshot Editor</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">QR Generator</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Word Counter</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">JSON Formatter</span></li>
+              <li><Link href="/tools/image-compressor" className="hover:text-text-primary transition-colors">Image Compressor</Link></li>
+              <li><Link href="/tools/screenshot-editor" className="hover:text-text-primary transition-colors">Screenshot Editor</Link></li>
+              <li><Link href="/tools/qr-generator" className="hover:text-text-primary transition-colors">QR Generator</Link></li>
+              <li><Link href="/tools/word-counter" className="hover:text-text-primary transition-colors">Word Counter</Link></li>
+              <li><Link href="/tools/json-formatter" className="hover:text-text-primary transition-colors">JSON Formatter</Link></li>
             </ul>
           </div>
 
@@ -46,9 +47,9 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold text-sm text-text-primary mb-4">Company</h3>
             <ul className="space-y-3 text-sm text-text-secondary">
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Privacy</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Terms</span></li>
-              <li><span className="hover:text-text-primary cursor-pointer transition-colors">Contact</span></li>
+              <li><Link href="/tools" className="hover:text-text-primary transition-colors">All Tools</Link></li>
+              <li><span className="hover:text-text-primary transition-colors cursor-default">Privacy Policy</span></li>
+              <li><span className="hover:text-text-primary transition-colors cursor-default">Terms of Service</span></li>
               <li>
                 <a
                   href="https://github.com/adityagarudkar1995-cell/OmniFexa"

@@ -43,3 +43,9 @@ Detailed analysis of current npm audit findings. There are 3 advisory clusters, 
 - **eslint**: Current 9.x, Latest 10.x — breaking change, wait for eslint-config-next support
 - **react/react-dom**: Current 19.2.4, Latest 19.2.8 — minor update available, safe but not urgent
 - **typescript**: Current 5.x, Latest 7.x — major version, wait for Next.js compatibility
+
+## Installed Additional Dependencies & Licence Records
+- **Package Name**: `lucide-react`
+- **Installed Version**: `1.27.0`
+- **Recorded Package Licence**: `ISC` (verified per package metadata in `package-lock.json` and `node_modules/lucide-react/package.json`)
+- **Purpose**: SVG icon system for header, theme toggle, mobile navigation, search suggestions, category cards, and trust badges.

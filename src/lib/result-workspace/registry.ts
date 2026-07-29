@@ -1,0 +1,221 @@
+import type { AdapterContract, ResultAdapterType } from './types';
+import type { ToolEntry } from '@/lib/tools/types';
+
+export const ADAPTER_REGISTRY: Record<ResultAdapterType, AdapterContract> = {
+  pdf: {
+    id: 'pdf',
+    name: 'PDF Workspace Adapter',
+    description: 'PDF viewer with page reordering, rotation, page deletion, and annotation overlays.',
+    iconName: 'FileText',
+    capabilities: {
+      supportsZoomPan: true,
+      supportsPageReorder: true,
+      supportsAnnotations: true,
+      supportsCropping: true,
+      supportsRedaction: true,
+      supportsTextEdit: false,
+      supportsSyntaxHighlighting: false,
+      supportsTimelineTrim: false,
+      supportsCanvasExport: false,
+      exportFormats: [
+        { id: 'pdf', label: 'PDF Document', extension: 'pdf', mimeType: 'application/pdf', isPrimary: true },
+        { id: 'png-zip', label: 'PNG Images (ZIP)', extension: 'zip', mimeType: 'application/zip' },
+        { id: 'txt', label: 'Extracted Text', extension: 'txt', mimeType: 'text/plain' },
+      ],
+    },
+    defaultActions: [
+      { id: 'zoom-in', label: 'Zoom In', iconName: 'ZoomIn', variant: 'ghost' },
+      { id: 'zoom-out', label: 'Zoom Out', iconName: 'ZoomOut', variant: 'ghost' },
+      { id: 'rotate', label: 'Rotate Pages', iconName: 'RotateCw', variant: 'ghost' },
+      { id: 'download', label: 'Download PDF', iconName: 'Download', variant: 'primary' },
+    ],
+  },
+  image: {
+    id: 'image',
+    name: 'Image Workspace Adapter',
+    description: 'Canvas-based editor for image crop, resize, annotation, blur, and format export.',
+    iconName: 'Image',
+    capabilities: {
+      supportsZoomPan: true,
+      supportsPageReorder: false,
+      supportsAnnotations: true,
+      supportsCropping: true,
+      supportsRedaction: true,
+      supportsTextEdit: false,
+      supportsSyntaxHighlighting: false,
+      supportsTimelineTrim: false,
+      supportsCanvasExport: true,
+      exportFormats: [
+        { id: 'png', label: 'PNG Image', extension: 'png', mimeType: 'image/png', isPrimary: true },
+        { id: 'webp', label: 'WebP Image', extension: 'webp', mimeType: 'image/webp' },
+        { id: 'jpg', label: 'JPG Image', extension: 'jpg', mimeType: 'image/jpeg' },
+      ],
+    },
+    defaultActions: [
+      { id: 'crop', label: 'Crop Image', iconName: 'Crop', variant: 'ghost' },
+      { id: 'blur', label: 'Blur / Redact', iconName: 'EyeOff', variant: 'ghost' },
+      { id: 'annotate', label: 'Annotate', iconName: 'PenTool', variant: 'ghost' },
+      { id: 'download', label: 'Export Image', iconName: 'Download', variant: 'primary' },
+    ],
+  },
+  text: {
+    id: 'text',
+    name: 'Text Workspace Adapter',
+    description: 'Rich text viewer and editor with copy to clipboard, diff view, and text cleanup.',
+    iconName: 'Type',
+    capabilities: {
+      supportsZoomPan: false,
+      supportsPageReorder: false,
+      supportsAnnotations: false,
+      supportsCropping: false,
+      supportsRedaction: false,
+      supportsTextEdit: true,
+      supportsSyntaxHighlighting: false,
+      supportsTimelineTrim: false,
+      supportsCanvasExport: false,
+      exportFormats: [
+        { id: 'txt', label: 'Plain Text (.txt)', extension: 'txt', mimeType: 'text/plain', isPrimary: true },
+        { id: 'md', label: 'Markdown (.md)', extension: 'md', mimeType: 'text/markdown' },
+      ],
+    },
+    defaultActions: [
+      { id: 'copy', label: 'Copy Text', iconName: 'Copy', variant: 'primary' },
+      { id: 'clear', label: 'Clear Text', iconName: 'Trash2', variant: 'ghost' },
+      { id: 'download', label: 'Download File', iconName: 'Download', variant: 'secondary' },
+    ],
+  },
+  code: {
+    id: 'code',
+    name: 'Code Workspace Adapter',
+    description: 'Syntax-highlighted code editor for JSON, XML, YAML, HTML, CSS, JS, and SQL.',
+    iconName: 'Code2',
+    capabilities: {
+      supportsZoomPan: false,
+      supportsPageReorder: false,
+      supportsAnnotations: false,
+      supportsCropping: false,
+      supportsRedaction: false,
+      supportsTextEdit: true,
+      supportsSyntaxHighlighting: true,
+      supportsTimelineTrim: false,
+      supportsCanvasExport: false,
+      exportFormats: [
+        { id: 'json', label: 'JSON File', extension: 'json', mimeType: 'application/json', isPrimary: true },
+        { id: 'txt', label: 'Text File', extension: 'txt', mimeType: 'text/plain' },
+      ],
+    },
+    defaultActions: [
+      { id: 'format', label: 'Format Code', iconName: 'Wand2', variant: 'secondary' },
+      { id: 'copy', label: 'Copy Code', iconName: 'Copy', variant: 'primary' },
+      { id: 'download', label: 'Download Code', iconName: 'Download', variant: 'ghost' },
+    ],
+  },
+  simple: {
+    id: 'simple',
+    name: 'Simple Result Workspace Adapter',
+    description: 'Formatted display card for calculator outputs, password generators, QR codes, and unit conversions.',
+    iconName: 'Sparkles',
+    capabilities: {
+      supportsZoomPan: false,
+      supportsPageReorder: false,
+      supportsAnnotations: false,
+      supportsCropping: false,
+      supportsRedaction: false,
+      supportsTextEdit: false,
+      supportsSyntaxHighlighting: false,
+      supportsTimelineTrim: false,
+      supportsCanvasExport: false,
+      exportFormats: [
+        { id: 'txt', label: 'Copy Result', extension: 'txt', mimeType: 'text/plain', isPrimary: true },
+      ],
+    },
+    defaultActions: [
+      { id: 'copy', label: 'Copy Result', iconName: 'Copy', variant: 'primary' },
+      { id: 'reset', label: 'Reset Calculator', iconName: 'RotateCcw', variant: 'ghost' },
+    ],
+  },
+  media: {
+    id: 'media',
+    name: 'Media Workspace Adapter',
+    description: 'Audio and video player with timeline preview, waveform, trimming, and media compression options.',
+    iconName: 'Video',
+    capabilities: {
+      supportsZoomPan: false,
+      supportsPageReorder: false,
+      supportsAnnotations: false,
+      supportsCropping: false,
+      supportsRedaction: false,
+      supportsTextEdit: false,
+      supportsSyntaxHighlighting: false,
+      supportsTimelineTrim: true,
+      supportsCanvasExport: false,
+      exportFormats: [
+        { id: 'mp4', label: 'MP4 Video', extension: 'mp4', mimeType: 'video/mp4', isPrimary: true },
+        { id: 'mp3', label: 'MP3 Audio', extension: 'mp3', mimeType: 'audio/mpeg' },
+        { id: 'gif', label: 'Animated GIF', extension: 'gif', mimeType: 'image/gif' },
+      ],
+    },
+    defaultActions: [
+      { id: 'play', label: 'Play / Pause', iconName: 'Play', variant: 'secondary' },
+      { id: 'trim', label: 'Trim Media', iconName: 'Scissors', variant: 'ghost' },
+      { id: 'download', label: 'Download Media', iconName: 'Download', variant: 'primary' },
+    ],
+  },
+  whiteboard: {
+    id: 'whiteboard',
+    name: 'Whiteboard Workspace Adapter',
+    description: 'Infinite canvas workspace for diagrams, sketches, flowcharts, and mind maps.',
+    iconName: 'PenLine',
+    capabilities: {
+      supportsZoomPan: true,
+      supportsPageReorder: false,
+      supportsAnnotations: true,
+      supportsCropping: false,
+      supportsRedaction: false,
+      supportsTextEdit: true,
+      supportsSyntaxHighlighting: false,
+      supportsTimelineTrim: false,
+      supportsCanvasExport: true,
+      exportFormats: [
+        { id: 'png', label: 'PNG Image', extension: 'png', mimeType: 'image/png', isPrimary: true },
+        { id: 'svg', label: 'SVG Vector', extension: 'svg', mimeType: 'image/svg+xml' },
+        { id: 'json', label: 'Canvas Project (.json)', extension: 'json', mimeType: 'application/json' },
+      ],
+    },
+    defaultActions: [
+      { id: 'select', label: 'Select Tool', iconName: 'MousePointer', variant: 'ghost' },
+      { id: 'draw', label: 'Draw Tool', iconName: 'PenTool', variant: 'secondary' },
+      { id: 'export-png', label: 'Export Diagram', iconName: 'Download', variant: 'primary' },
+    ],
+  },
+};
+
+/** Get the contract for a given adapter type */
+export function getAdapterContract(adapterType: ResultAdapterType): AdapterContract {
+  const contract = ADAPTER_REGISTRY[adapterType];
+  if (!contract) {
+    throw new Error(`Unsupported workspace adapter type: ${adapterType}`);
+  }
+  return contract;
+}
+
+/** Check if a string is a valid registered adapter type */
+export function isValidAdapter(adapterType: string): adapterType is ResultAdapterType {
+  return adapterType in ADAPTER_REGISTRY;
+}
+
+/** Validate that all tools in the canonical catalog map to a valid registered adapter */
+export function validateCatalogAdapters(catalog: ToolEntry[]): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  for (const tool of catalog) {
+    if (!isValidAdapter(tool.resultAdapter)) {
+      errors.push(`Tool "${tool.id}" references unknown resultAdapter "${tool.resultAdapter}"`);
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}

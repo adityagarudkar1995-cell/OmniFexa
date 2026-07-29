@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { searchTools } from '@/lib/search';
 import { toolCatalog } from '@/lib/tools/catalog';
@@ -14,11 +15,11 @@ interface SearchBoxProps {
 }
 
 export function SearchBox({ size = 'hero', autoFocus = false }: SearchBoxProps) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ToolEntry[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [toast, setToast] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isHero = size === 'hero';
@@ -42,12 +43,10 @@ export function SearchBox({ size = 'hero', autoFocus = false }: SearchBoxProps) 
     }
   };
 
-  const handleSelect = (_tool?: ToolEntry) => {
-    void _tool;
-    setToast(true);
-    setTimeout(() => setToast(false), 2000);
+  const handleSelect = (tool: ToolEntry) => {
     setIsOpen(false);
     setQuery('');
+    router.push(`/tools/${tool.slug}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -102,12 +101,6 @@ export function SearchBox({ size = 'hero', autoFocus = false }: SearchBoxProps) 
           onSelect={handleSelect}
           query={query}
         />
-      )}
-
-      {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-surface-900 text-surface-0 px-4 py-2 rounded-lg text-sm shadow-lg animate-in fade-in duration-300 z-50">
-          Coming soon — in development
-        </div>
       )}
     </div>
   );

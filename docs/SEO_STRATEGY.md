@@ -1,21 +1,20 @@
 # SEO Strategy
 
 ## Routing
-- Every tool gets its own dedicated route: `/tools/[slug]`
-- Category listing pages consolidate related tools: `/tools/category/[category]`
+- Dedicated tool routes for all catalog entries: `/tools/[slug]`
+- Catalog listing & discovery page: `/tools`
+- Dynamic category filter URLs: `/tools?category=[category]`
 
-## Metadata
-- **Per-tool SEO metadata**: Unique title, detailed description, and targeted keywords generated for every individual tool.
-- **Structured data (JSON-LD)**: Provided for all tools to enhance search engine understanding.
+## Metadata & Indexing Guardrails
+- **Per-tool SEO metadata**: Unique title, detailed description, and targeted keywords (including Hinglish phrases) for every tool.
+- **Page-Level Noindex Guardrail**: Planned individual tool routes (`implementationStatus: "planned"`) emit `robots: { index: false, follow: false }` metadata. Search engines are permitted to crawl the routes to read this header.
+- **Sitemap Exclusion**: `sitemap.xml` strictly includes only released indexable pages (`/` and `/tools`). All 187 planned tool routes are excluded until their status transitions to `alpha`, `beta`, or `production`.
 
 ## Best Practices
-- **No thin pages**: Tools must have substantial accompanying content or unique utility.
-- **No keyword stuffing**: Content should be natural and user-focused.
-- **Honesty**: No fabricated ratings, reviews, or fake usage numbers.
-- **Performance**: Strict optimization for Core Web Vitals to improve search ranking.
+- **No thin pages**: Tools must have substantial accompanying content, metadata panels, format specifications, and privacy guarantees.
+- **No keyword stuffing**: Content is natural, helpful, and user-focused.
+- **Honesty**: No fabricated ratings, reviews, download counts, or fake availability claims.
+- **Performance**: Strict optimization for Core Web Vitals using Next.js static page pre-rendering (`generateStaticParams`).
 
 ## Market Focus
-- Incorporate Hinglish keywords to reach the vast Indian market effectively.
-
-## Sitemap
-- Dynamic sitemap generation strategy ensures new tools are automatically indexed.
+- Incorporate Hinglish keywords (`pdf compress kaise kare`, `photo se text nikale`, etc.) to effectively serve the Indian market.
