@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: ToolPageProps): Promise<Metad
   }
 
   return {
-    title: `${tool.seoTitle} | OmniFexa`,
+    title: tool.seoTitle,
     description: tool.seoDescription,
     keywords: [...tool.keywords, ...tool.hinglishKeywords],
     robots: getToolRobotsMetadata(tool),

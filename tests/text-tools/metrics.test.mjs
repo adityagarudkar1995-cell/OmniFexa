@@ -34,6 +34,24 @@ test('Word & Character Counter Engine - Multi-line and paragraphs (LF and CRLF)'
   assert.equal(metrics.sentences, 4);
 });
 
+test('Word & Character Counter Engine - Line endings and paragraph separation (CR, LF, CRLF, whitespace blank lines)', () => {
+  // CR-only blank line
+  assert.equal(calculateTextMetrics("First\r\rSecond").paragraphs, 2);
+
+  // Whitespace-only blank line
+  assert.equal(calculateTextMetrics("First\n   \nSecond").paragraphs, 2);
+
+  // CRLF whitespace blank line
+  assert.equal(calculateTextMetrics("First\r\n\t\r\nSecond").paragraphs, 2);
+
+  // Blank-only text
+  assert.equal(calculateTextMetrics("\n\n").paragraphs, 0);
+  assert.equal(calculateTextMetrics("\r\n \r\n").paragraphs, 0);
+
+  // Single paragraph
+  assert.equal(calculateTextMetrics("Single paragraph").paragraphs, 1);
+});
+
 test('Word & Character Counter Engine - Indian Unicode text (Hindi / Marathi)', () => {
   const hindiText = "नमस्ते दुनिया! OmniFexa एक बेहतरीन प्लेटफ़ॉर्म है।";
   const metrics = calculateTextMetrics(hindiText);

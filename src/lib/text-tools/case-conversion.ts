@@ -45,12 +45,12 @@ export function convertCase(text: string, mode: CaseConversionMode): string {
       });
 
     case 'sentence-case': {
-      // Lowercase text first and capitalize first letter of each sentence
-      return text
-        .toLowerCase()
-        .replace(/(^\s*|[.!?]\s+)(\p{L})/gu, (match, prefix, char) => {
-          return prefix + char.toUpperCase();
-        });
+      // Lowercase text first while preserving original line break delimiters (\r\n, \r, \n) and spacing
+      const lower = text.toLowerCase();
+      // Capitalize first Unicode letter at text start (^\s*), after linebreaks ([\r\n]+\s*), or after sentence punctuation ([.!?]+\s+)
+      return lower.replace(/(^\s*|[\r\n]+\s*|[.!?]+\s+)(\p{L})/gu, (match, prefix, char) => {
+        return prefix + char.toUpperCase();
+      });
     }
 
     case 'camel-case': {

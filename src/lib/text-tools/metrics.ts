@@ -29,12 +29,15 @@ export function calculateTextMetrics(text: string): TextMetrics {
     };
   }
 
-  // 1. Lines count (supports LF, CRLF, CR)
-  const lines = text.split(/\r\n|\r|\n/).length;
+  // Normalize CRLF (\r\n) and CR-only (\r) to LF (\n) for line and paragraph analysis only
+  const normalizedText = text.replace(/\r\n|\r/g, '\n');
 
-  // 2. Paragraphs count (non-empty blocks separated by two or more newlines)
-  const paragraphs = text
-    .split(/(?:\r?\n){2,}/)
+  // 1. Lines count
+  const lines = normalizedText.split('\n').length;
+
+  // 2. Paragraphs count (non-empty blocks separated by one or more blank lines, including whitespace-only lines)
+  const paragraphs = normalizedText
+    .split(/\n\s*\n+/)
     .map((block) => block.trim())
     .filter((block) => block.length > 0).length;
 

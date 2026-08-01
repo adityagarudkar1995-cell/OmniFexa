@@ -17,6 +17,32 @@ test('Case Conversion Engine - Basic casing modes', () => {
   assert.equal(convertCase(text, 'sentence-case'), "Hello world! This is a test.");
 });
 
+test('Case Conversion Engine - Sentence Case Line & Indentation Boundaries (LF, CRLF, CR)', () => {
+  // LF line beginning
+  assert.equal(
+    convertCase("HELLO WORLD\nSECOND LINE", 'sentence-case'),
+    "Hello world\nSecond line"
+  );
+
+  // CRLF line beginning with indentation
+  assert.equal(
+    convertCase("HELLO\r\n  SECOND", 'sentence-case'),
+    "Hello\r\n  Second"
+  );
+
+  // CR line beginning
+  assert.equal(
+    convertCase("FIRST\rSECOND", 'sentence-case'),
+    "First\rSecond"
+  );
+
+  // Multiple paragraphs
+  assert.equal(
+    convertCase("FIRST PARAGRAPH.\n\nSECOND PARAGRAPH.", 'sentence-case'),
+    "First paragraph.\n\nSecond paragraph."
+  );
+});
+
 test('Case Conversion Engine - Identifier modes', () => {
   const text = "Hello World  foo_bar-baz 123";
 
