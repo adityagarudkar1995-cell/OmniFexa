@@ -9,10 +9,11 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:text-tools": "node --test tests/text-tools/*.test.mjs",
+    "test:catalog": "node --test tests/tools-directory/*.test.mjs",
     "validate:catalog": "node scripts/validate-tool-catalog.mjs",
     "validate:adapters": "node scripts/validate-adapter-registry.mjs",
     "validate:implementations": "node scripts/validate-tool-implementations.mjs",
-    "check": "node scripts/validate-tool-catalog.mjs && node scripts/validate-adapter-registry.mjs && node scripts/validate-tool-implementations.mjs && npm run test:text-tools && eslint && tsc --noEmit && npm run build"
+    "check": "node scripts/validate-tool-catalog.mjs && node scripts/validate-adapter-registry.mjs && node scripts/validate-tool-implementations.mjs && npm run test:text-tools && npm run test:catalog && eslint && tsc --noEmit && npm run build"
   },
   "dependencies": {
     "lucide-react": "^1.27.0",

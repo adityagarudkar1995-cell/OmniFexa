@@ -5,6 +5,8 @@ This directory holds per-feature agent briefs for Antigravity coding agents and 
 
 ## Available Briefs
 - [tool-platform-shell.md](file:///d:/OmniFexa/docs/agent-briefs/tool-platform-shell.md) — Tool Catalog, Dynamic Tool Routes, SEO Indexing Guardrails, and Universal Result Workspace Shell
+- [text-tools-foundation.md](file:///d:/OmniFexa/docs/agent-briefs/text-tools-foundation.md) — First Functional Tool Bundle (Word & Character Counter and Case Converter)
+- [tools-directory-ui-redesign.md](file:///d:/OmniFexa/docs/agent-briefs/tools-directory-ui-redesign.md) — Public Tools Directory UX Redesign and Category Explorer
 
 ## Brief Template
 

@@ -1,4 +1,4 @@
-import type { ToolCategory } from '@/lib/tools/types';
+import type { ToolCategory, ImplementationStatus } from '@/lib/tools/types';
 
 export interface CategoryDisplay {
   key: ToolCategory;
@@ -6,117 +6,143 @@ export interface CategoryDisplay {
   description: string;
   iconName: string;
   count: number;
+  totalCount: number;
+  availableCount: number;
 }
 
-/** Human-readable metadata for each tool category */
+/** Complete human-readable metadata for all 15 tool categories */
 const CATEGORY_META: Record<ToolCategory, { label: string; description: string; iconName: string }> = {
   'pdf-compress-core': {
-    label: 'PDF Tools',
-    description: 'Compress, merge, split and manage PDFs',
+    label: 'PDF Essentials',
+    description: 'Compress, merge, split, and organize PDF documents',
     iconName: 'FileText',
   },
   'pdf-edit-view': {
     label: 'PDF Editing',
-    description: 'Edit, annotate and view PDF documents',
+    description: 'Edit text, annotate, rotate, and view PDF files',
     iconName: 'PenTool',
   },
   'pdf-security-scan': {
     label: 'PDF Security',
-    description: 'Protect, unlock and scan PDFs',
+    description: 'Protect, unlock, sign, and sanitize PDF files',
     iconName: 'ShieldCheck',
   },
   'convert-from-pdf': {
     label: 'Convert from PDF',
-    description: 'Convert PDFs to Word, Excel, images and more',
+    description: 'Convert PDFs to Word, Excel, PowerPoint, and images',
     iconName: 'FileOutput',
   },
   'convert-to-pdf': {
     label: 'Convert to PDF',
-    description: 'Convert documents and images to PDF',
+    description: 'Convert Office docs, HTML, and images into PDF format',
     iconName: 'FileInput',
   },
   'ai-pdf': {
     label: 'AI PDF Tools',
-    description: 'AI-powered PDF analysis and extraction',
+    description: 'Summarize, analyze, and query PDF documents with AI',
     iconName: 'Sparkles',
   },
   'image': {
     label: 'Image Tools',
-    description: 'Compress, resize, convert and edit images',
+    description: 'Compress, resize, convert, crop, and edit images',
     iconName: 'Image',
   },
   'screenshot-editor': {
     label: 'Screenshot Editor',
-    description: 'Annotate and edit screenshots professionally',
+    description: 'Annotate, blur, and frame screenshots professionally',
     iconName: 'Monitor',
   },
   'ocr-handwriting': {
     label: 'OCR & Handwriting',
-    description: 'Extract text from images and handwriting',
+    description: 'Extract text from scanned documents and handwriting',
     iconName: 'ScanText',
   },
   'whiteboard-design': {
     label: 'Whiteboard',
-    description: 'Infinite canvas for diagrams and sketches',
+    description: 'Infinite canvas for diagrams, sketches, and flowcharts',
     iconName: 'PenLine',
   },
   'text-writing': {
     label: 'Text Tools',
-    description: 'Word counters, converters and text utilities',
+    description: 'Word counters, case converters, and text utilities',
     iconName: 'Type',
   },
   'converters-generators': {
-    label: 'Generators',
-    description: 'QR codes, passwords, hashes and converters',
+    label: 'Generators & Converters',
+    description: 'QR codes, passwords, hashes, and unit converters',
     iconName: 'Wand2',
   },
   'developer': {
     label: 'Developer Tools',
-    description: 'JSON, regex, JWT and code formatters',
+    description: 'JSON, regex, JWT, Base64, and code formatters',
     iconName: 'Code2',
   },
   'calculators': {
     label: 'Calculators',
-    description: 'EMI, GST, SIP, age and percentage calculators',
+    description: 'EMI, GST, SIP, age, and financial calculators',
     iconName: 'Calculator',
   },
   'audio-video': {
     label: 'Audio & Video',
-    description: 'Compress, trim and convert media files',
+    description: 'Compress, trim, extract, and convert media files',
     iconName: 'Video',
   },
 };
 
-/** Grouped categories for homepage display (excludes subcategories that merge with parent) */
-const HOMEPAGE_CATEGORIES: ToolCategory[] = [
+/** All 15 tool categories in canonical display order */
+export const ALL_CATEGORIES: ToolCategory[] = [
   'pdf-compress-core',
+  'pdf-edit-view',
+  'pdf-security-scan',
+  'convert-from-pdf',
+  'convert-to-pdf',
+  'ai-pdf',
   'image',
   'screenshot-editor',
   'ocr-handwriting',
-  'convert-from-pdf',
-  'convert-to-pdf',
+  'whiteboard-design',
   'text-writing',
+  'converters-generators',
   'developer',
   'calculators',
-  'converters-generators',
-  'whiteboard-design',
   'audio-video',
 ];
 
 export function getCategoryMeta(category: ToolCategory) {
-  return CATEGORY_META[category];
+  return CATEGORY_META[category] || {
+    label: category,
+    description: 'Tools and utilities',
+    iconName: 'Wand2',
+  };
 }
 
-export function getCategoryCounts(catalog: Array<{ category: ToolCategory }>): CategoryDisplay[] {
-  const countMap = new Map<ToolCategory, number>();
+export function getDetailedCategoryDisplays(
+  catalog: Array<{ category: ToolCategory; implementationStatus: ImplementationStatus }>
+): CategoryDisplay[] {
+  const totalMap = new Map<ToolCategory, number>();
+  const availableMap = new Map<ToolCategory, number>();
 
   for (const tool of catalog) {
-    countMap.set(tool.category, (countMap.get(tool.category) ?? 0) + 1);
+    totalMap.set(tool.category, (totalMap.get(tool.category) ?? 0) + 1);
+    if (tool.implementationStatus === 'production') {
+      availableMap.set(tool.category, (availableMap.get(tool.category) ?? 0) + 1);
+    }
   }
 
-  return HOMEPAGE_CATEGORIES.map((key) => ({
-    key,
-    ...CATEGORY_META[key],
-    count: countMap.get(key) ?? 0,
-  }));
+  return ALL_CATEGORIES.map((key) => {
+    const total = totalMap.get(key) ?? 0;
+    return {
+      key,
+      ...getCategoryMeta(key),
+      count: total,
+      totalCount: total,
+      availableCount: availableMap.get(key) ?? 0,
+    };
+  });
+}
+
+export function getCategoryCounts(
+  catalog: Array<{ category: ToolCategory; implementationStatus?: ImplementationStatus }>
+): CategoryDisplay[] {
+  return getDetailedCategoryDisplays(catalog as Array<{ category: ToolCategory; implementationStatus: ImplementationStatus }>);
 }
