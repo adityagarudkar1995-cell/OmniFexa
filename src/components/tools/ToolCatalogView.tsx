@@ -1,12 +1,20 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, SlidersHorizontal } from 'lucide-react';
 
 import type { ToolCategory } from '@/lib/tools/types';
 import type { ToolCatalogProjectionEntry } from '@/lib/tools/projection';
+import {
+  filterAndSortDirectoryTools,
+  getDirectoryStatusFilter,
+  getDirectoryStatusLabel,
+  isDirectorySearchUpdateCurrent,
+  synchronizeDirectoryQueryFromUrl,
+  updateDirectorySearchParams,
+} from '@/lib/tools/directory';
 import { getDetailedCategoryDisplays, getCategoryMeta, ALL_CATEGORIES } from '@/lib/categories';
 import { ToolCatalogCard } from './ToolCatalogCard';
 import { ToolsDirectoryHero } from './directory/ToolsDirectoryHero';
@@ -23,64 +31,135 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const urlSearch = searchParams.toString();
 
   // Single source of truth from URL searchParams
   const urlQuery = searchParams.get('q') || '';
   const selectedCategory = searchParams.get('category') || '';
   const selectedPhase = searchParams.get('phase') || '';
-  const selectedStatus = searchParams.get('status') || '';
+  const selectedStatus = getDirectoryStatusFilter(searchParams.get('status'));
   const selectedMode = searchParams.get('mode') || '';
 
   // Local state for search input
   const [localQueryState, setLocalQueryState] = useState(urlQuery);
-  const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(
     Boolean(selectedPhase || selectedMode)
   );
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const observedUrlSearchRef = useRef(urlSearch);
+  const latestUrlSearchRef = useRef(urlSearch);
+  const searchRevisionRef = useRef(0);
 
-  // Sync local typing state during render if URL query changes externally (Back/Forward)
-  if (prevUrlQuery !== urlQuery) {
-    setPrevUrlQuery(urlQuery);
-    setLocalQueryState(urlQuery);
-  }
+  const clearPendingSearchTimer = useCallback(() => {
+    if (searchTimerRef.current !== null) {
+      clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = null;
+    }
+  }, []);
 
-  const localQuery = localQueryState;
+  const invalidatePendingSearchUpdate = useCallback(() => {
+    searchRevisionRef.current += 1;
+    clearPendingSearchTimer();
+  }, [clearPendingSearchTimer]);
 
-  // Single parameter updater maintaining other searchParams
-  const setSingleParam = useCallback(
-    (key: string, val: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      const trimmed = val.trim();
+  const navigateWithParams = useCallback(
+    (
+      updates: Record<string, string | null | undefined>,
+      historyMode: 'push' | 'replace' = 'push'
+    ) => {
+      invalidatePendingSearchUpdate();
 
-      if (trimmed) {
-        params.set(key, trimmed);
-      } else {
-        params.delete(key);
+      const currentSearch = latestUrlSearchRef.current;
+      const nextSearch = updateDirectorySearchParams(currentSearch, updates);
+
+      if (nextSearch === currentSearch) {
+        return false;
       }
 
-      const queryString = params.toString();
-      const targetPath = queryString ? `${pathname}?${queryString}` : pathname;
-      const currentPath = searchParams.toString() ? `${pathname}?${searchParams.toString()}` : pathname;
+      latestUrlSearchRef.current = nextSearch;
+      const targetPath = nextSearch ? `${pathname}?${nextSearch}` : pathname;
 
-      if (targetPath !== currentPath) {
+      if (historyMode === 'replace') {
         router.replace(targetPath, { scroll: false });
+      } else {
+        router.push(targetPath, { scroll: false });
       }
+
+      return true;
     },
-    [pathname, router, searchParams]
+    [invalidatePendingSearchUpdate, pathname, router]
   );
 
-  // 300ms debounced free-text search update
+  // URL navigation is authoritative. A single effect either synchronizes local
+  // input from the new URL or schedules the current local draft for commit.
   useEffect(() => {
-    if (localQuery.trim() === urlQuery.trim()) {
+    clearPendingSearchTimer();
+
+    const previousUrlSearch = observedUrlSearchRef.current;
+    if (previousUrlSearch !== urlSearch) {
+      observedUrlSearchRef.current = urlSearch;
+      latestUrlSearchRef.current = urlSearch;
+      searchRevisionRef.current += 1;
+      setLocalQueryState((currentQuery) =>
+        synchronizeDirectoryQueryFromUrl(currentQuery, previousUrlSearch, urlSearch)
+      );
       return;
     }
 
+    if (localQueryState.trim() === urlQuery.trim()) {
+      return;
+    }
+
+    const scheduledRevision = searchRevisionRef.current;
+    const scheduledUrlSearch = urlSearch;
     const timer = setTimeout(() => {
-      setSingleParam('q', localQuery);
+      if (
+        !isDirectorySearchUpdateCurrent(
+          scheduledUrlSearch,
+          latestUrlSearchRef.current,
+          scheduledRevision,
+          searchRevisionRef.current
+        )
+      ) {
+        return;
+      }
+
+      searchTimerRef.current = null;
+      navigateWithParams({ q: localQueryState }, 'replace');
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [localQuery, urlQuery, setSingleParam]);
+    searchTimerRef.current = timer;
+
+    return () => {
+      clearTimeout(timer);
+      if (searchTimerRef.current === timer) {
+        searchTimerRef.current = null;
+      }
+    };
+  }, [
+    clearPendingSearchTimer,
+    localQueryState,
+    navigateWithParams,
+    urlQuery,
+    urlSearch,
+  ]);
+
+  // Popstate fires before the Next.js search-param snapshot updates, so pending
+  // timers are invalidated synchronously and cannot overwrite Back/Forward.
+  useEffect(() => {
+    const handlePopState = () => {
+      latestUrlSearchRef.current = window.location.search.replace(/^\?/, '');
+      invalidatePendingSearchUpdate();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      clearPendingSearchTimer();
+    };
+  }, [clearPendingSearchTimer, invalidatePendingSearchUpdate]);
+
+  const localQuery = localQueryState;
 
   // Derived counts
   const totalCount = catalog.length;
@@ -96,87 +175,75 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
     [catalog]
   );
 
-  // Category selection handler with smooth scroll to directory section
-  const handleCategorySelect = (catKey: string) => {
-    setSingleParam('category', catKey);
+  const focusDirectory = useCallback(() => {
     const directoryEl = document.getElementById('all-tools');
     if (directoryEl) {
-      directoryEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      directoryEl.focus({ preventScroll: true });
+      directoryEl.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
+  }, []);
+
+  const navigateAndFocusDirectory = useCallback(
+    (updates: Record<string, string | null | undefined>) => {
+      const didNavigate = navigateWithParams(updates);
+
+      if (!didNavigate) {
+        focusDirectory();
+        return;
+      }
+
+      window.setTimeout(focusDirectory, 100);
+    },
+    [focusDirectory, navigateWithParams]
+  );
+
+  // Discrete filter actions create restorable history entries.
+  const handleCategorySelect = (catKey: string) => {
+    navigateAndFocusDirectory({ category: catKey });
   };
 
   const handleStatusTabSelect = (statusValue: string) => {
-    setSingleParam('status', statusValue);
+    navigateWithParams({ status: statusValue });
   };
 
   const handleClearQuery = () => {
+    invalidatePendingSearchUpdate();
     setLocalQueryState('');
-    setSingleParam('q', '');
+    navigateWithParams({ q: '' });
   };
 
   const resetAllFilters = () => {
+    invalidatePendingSearchUpdate();
     setLocalQueryState('');
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('q');
-    params.delete('category');
-    params.delete('phase');
-    params.delete('status');
-    params.delete('mode');
-
-    const queryString = params.toString();
-    const targetPath = queryString ? `${pathname}?${queryString}` : pathname;
-    router.replace(targetPath, { scroll: false });
+    navigateWithParams({
+      q: null,
+      category: null,
+      phase: null,
+      status: null,
+      mode: null,
+    });
   };
 
   const handleExampleClick = (ex: { type: 'route' | 'query'; value: string }) => {
     if (ex.type === 'query') {
+      invalidatePendingSearchUpdate();
       setLocalQueryState(ex.value);
-      setSingleParam('q', ex.value);
-      const searchEl = document.getElementById('all-tools');
-      if (searchEl) {
-        searchEl.scrollIntoView({ behavior: 'smooth' });
-      }
+      navigateAndFocusDirectory({ q: ex.value });
     }
   };
 
   // Filtered and Sorted catalog tools
-  const filteredTools = useMemo(() => {
-    const q = localQuery.toLowerCase().trim();
-
-    const filtered = catalog.filter((tool) => {
-      if (selectedCategory && tool.category !== selectedCategory) return false;
-      if (selectedPhase && tool.phase !== selectedPhase) return false;
-      if (selectedStatus && tool.implementationStatus !== selectedStatus) return false;
-      if (selectedMode && tool.processingMode !== selectedMode) return false;
-
-      if (q) {
-        const name = tool.name.toLowerCase();
-        const desc = tool.shortDescription.toLowerCase();
-        const kwMatch = tool.keywords.some((k) => k.toLowerCase().includes(q));
-        const hinglishMatch = tool.hinglishKeywords.some((k) => k.toLowerCase().includes(q));
-
-        if (!name.includes(q) && !desc.includes(q) && !kwMatch && !hinglishMatch) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    // Default sorting: Production tools first -> Featured planned tools next -> Alphabetical fallback
-    return [...filtered].sort((a, b) => {
-      const aProd = a.implementationStatus === 'production';
-      const bProd = b.implementationStatus === 'production';
-      if (aProd && !bProd) return -1;
-      if (!aProd && bProd) return 1;
-
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-
-      return a.name.localeCompare(b.name);
-    });
-  }, [catalog, localQuery, selectedCategory, selectedPhase, selectedStatus, selectedMode]);
+  const filteredTools = useMemo(
+    () =>
+      filterAndSortDirectoryTools(catalog, {
+        query: localQuery,
+        category: selectedCategory,
+        phase: selectedPhase,
+        status: selectedStatus,
+        mode: selectedMode,
+      }),
+    [catalog, localQuery, selectedCategory, selectedMode, selectedPhase, selectedStatus]
+  );
 
   const hasActiveFilters = Boolean(
     localQuery || selectedCategory || selectedPhase || selectedStatus || selectedMode
@@ -208,6 +275,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
         categoryCount={categoryDisplays.length}
         searchQuery={localQuery}
         onSearchChange={(val) => setLocalQueryState(val)}
+        onSearchClear={handleClearQuery}
         onExampleClick={handleExampleClick}
       />
 
@@ -224,11 +292,19 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
       />
 
       {/* SECTION D: ALL TOOLS DIRECTORY */}
-      <section id="all-tools" className="space-y-6 pt-4 scroll-mt-24">
+      <section
+        id="all-tools"
+        aria-labelledby="all-tools-heading"
+        tabIndex={-1}
+        className="space-y-6 pt-4 scroll-mt-24 outline-none"
+      >
         {/* Header & Derived Counter Subtitle */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">
+            <h2
+              id="all-tools-heading"
+              className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight"
+            >
               All tools
             </h2>
             <p className="text-sm text-text-secondary mt-1">
@@ -252,12 +328,12 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
         <div className="bg-surface-0 border border-border-default rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* Primary Status Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-surface-100 dark:bg-surface-200 rounded-xl overflow-x-auto">
+            <div className="grid w-full grid-cols-3 gap-1.5 p-1 bg-surface-100 dark:bg-surface-200 rounded-xl sm:w-auto">
               <button
                 type="button"
                 onClick={() => handleStatusTabSelect('')}
                 aria-pressed={!selectedStatus}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all min-h-[40px] ${
+                className={`px-2 sm:px-3.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold leading-tight transition-all min-h-[44px] ${
                   !selectedStatus
                     ? 'bg-surface-0 text-text-primary shadow-sm'
                     : 'text-text-secondary hover:text-text-primary'
@@ -270,7 +346,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
                 type="button"
                 onClick={() => handleStatusTabSelect('production')}
                 aria-pressed={selectedStatus === 'production'}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all min-h-[40px] flex items-center gap-1.5 ${
+                className={`px-2 sm:px-3.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold leading-tight transition-all min-h-[44px] flex items-center justify-center gap-1.5 ${
                   selectedStatus === 'production'
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-text-secondary hover:text-text-primary'
@@ -284,7 +360,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
                 type="button"
                 onClick={() => handleStatusTabSelect('planned')}
                 aria-pressed={selectedStatus === 'planned'}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all min-h-[40px] ${
+                className={`px-2 sm:px-3.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold leading-tight transition-all min-h-[44px] ${
                   selectedStatus === 'planned'
                     ? 'bg-surface-0 text-text-primary shadow-sm'
                     : 'text-text-secondary hover:text-text-primary'
@@ -298,6 +374,8 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
             <button
               type="button"
               onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
+              aria-expanded={isAdvancedFiltersOpen}
+              aria-controls="advanced-tools-filters"
               className="inline-flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-text-primary px-3 py-2 rounded-xl bg-surface-50 border border-border-default transition-colors min-h-[44px] self-start sm:self-auto"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -312,7 +390,10 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
 
           {/* Advanced Filters Panel */}
           {isAdvancedFiltersOpen && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border-subtle text-xs">
+            <div
+              id="advanced-tools-filters"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border-subtle text-xs"
+            >
               {/* Phase Filter */}
               <div>
                 <label htmlFor="phase-select" className="block text-[11px] font-medium text-text-tertiary mb-1">
@@ -321,7 +402,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
                 <select
                   id="phase-select"
                   value={selectedPhase}
-                  onChange={(e) => setSingleParam('phase', e.target.value)}
+                  onChange={(e) => navigateWithParams({ phase: e.target.value })}
                   className="w-full bg-surface-50 border border-border-default rounded-xl px-3 py-2 text-text-secondary focus:outline-none focus:border-primary-500 min-h-[44px]"
                 >
                   <option value="">All Roadmap Phases</option>
@@ -341,13 +422,14 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
                 <select
                   id="mode-select"
                   value={selectedMode}
-                  onChange={(e) => setSingleParam('mode', e.target.value)}
+                  onChange={(e) => navigateWithParams({ mode: e.target.value })}
                   className="w-full bg-surface-50 border border-border-default rounded-xl px-3 py-2 text-text-secondary focus:outline-none focus:border-primary-500 min-h-[44px]"
                 >
                   <option value="">All Processing Modes</option>
                   <option value="client">Client (Browser On-Device)</option>
                   <option value="server">Server Processing</option>
                   <option value="hybrid">Hybrid</option>
+                  <option value="research-required">Research Required</option>
                 </select>
               </div>
             </div>
@@ -388,7 +470,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
 
               {selectedStatus && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-100 dark:bg-surface-200 font-medium text-text-primary border border-border-default">
-                  Status: {selectedStatus === 'production' ? 'Available' : 'Coming Soon'}
+                  Status: {getDirectoryStatusLabel(selectedStatus)}
                   <button
                     type="button"
                     onClick={() => handleStatusTabSelect('')}
@@ -405,7 +487,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
                   Phase: {selectedPhase.replace('phase-', 'Phase ').replace('-', ': ')}
                   <button
                     type="button"
-                    onClick={() => setSingleParam('phase', '')}
+                    onClick={() => navigateWithParams({ phase: '' })}
                     aria-label="Remove phase filter"
                     className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
                   >
@@ -419,7 +501,7 @@ export function ToolCatalogView({ catalog }: ToolCatalogViewProps) {
                   Mode: {selectedMode}
                   <button
                     type="button"
-                    onClick={() => setSingleParam('mode', '')}
+                    onClick={() => navigateWithParams({ mode: '' })}
                     aria-label="Remove mode filter"
                     className="hover:text-rose-600 font-bold ml-0.5 p-0.5"
                   >

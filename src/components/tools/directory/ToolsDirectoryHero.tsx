@@ -10,6 +10,7 @@ interface ToolsDirectoryHeroProps {
   categoryCount: number;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  onSearchClear: () => void;
   onExampleClick: (target: { type: 'route' | 'query'; value: string }) => void;
 }
 
@@ -19,6 +20,7 @@ export function ToolsDirectoryHero({
   categoryCount,
   searchQuery,
   onSearchChange,
+  onSearchClear,
   onExampleClick,
 }: ToolsDirectoryHeroProps) {
   const exampleSearches = [
@@ -77,11 +79,11 @@ export function ToolsDirectoryHero({
           </div>
 
           <div className="bg-surface-50 border border-border-default rounded-xl p-3 text-center">
-            <span className="block font-bold text-lg text-primary-600 dark:text-primary-400">
-              100%
+            <span className="block font-bold text-sm sm:text-base text-primary-600 dark:text-primary-400">
+              Privacy-First
             </span>
             <span className="text-[11px] font-medium text-text-tertiary uppercase tracking-wider">
-              Privacy-First
+              Design Principle
             </span>
           </div>
         </div>
@@ -104,7 +106,7 @@ export function ToolsDirectoryHero({
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => onSearchChange('')}
+                onClick={onSearchClear}
                 aria-label="Clear search input"
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary text-xs font-semibold p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
               >

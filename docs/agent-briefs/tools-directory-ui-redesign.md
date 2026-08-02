@@ -13,7 +13,7 @@ This brief documents the complete user-focused UI/UX redesign of the public Omni
 1. **Tools Hero**:
    - Eyebrow: *"Every Tool. One Workspace."*
    - H1: *"Find the right tool for the job"*
-   - Description & 4 data-driven summary stat cards (Available Now, On Roadmap, Categories, 100% Privacy-First).
+   - Description & 4 data-driven summary cards (Available Now, On Roadmap, Categories, Privacy-First design principle).
    - Search bar (`id="hero-search"`) with quick example search triggers.
 2. **Available Now Section**:
    - Prominently showcases production tools (`word-character-counter`, `case-converter`) with `Available` badges, `Runs in your browser` privacy labels, and direct `Open Tool →` actions.

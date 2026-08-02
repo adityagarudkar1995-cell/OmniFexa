@@ -35,7 +35,7 @@ export function CategoryGridSection({
             <button
               key={cat.key}
               type="button"
-              onClick={() => onCategorySelect(cat.key)}
+              onClick={() => onCategorySelect(isSelected ? '' : cat.key)}
               aria-pressed={isSelected}
               className={`p-4 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between group min-h-[120px] ${
                 isSelected
